@@ -9,7 +9,8 @@
  * - Siblings of focus + their families
  * - Direct ancestors up to ancestorDepth
  * - Descendants down to descendantDepth
- * - Optionally: ancestors of spouse, aunts/uncles, cousins
+ * - Optionally: ancestors of spouse, aunts/uncles, cousins, siblings of the
+ *   deeper ancestors (great-aunts/uncles and up)
  */
 
 import { PersonId, PartnershipId, Person, Partnership, StromData } from '../../types.js';
@@ -26,7 +27,8 @@ export function selectSubgraph(input: SelectSubgraphInput): GraphSelection {
         descendantDepth,
         includeSpouseAncestors,
         includeParentSiblings,
-        includeParentSiblingDescendants
+        includeParentSiblingDescendants,
+        includeAncestorSiblings = false
     } = input;
 
     const persons = new Set<PersonId>();
@@ -128,6 +130,24 @@ export function selectSubgraph(input: SelectSubgraphInput): GraphSelection {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // 6. Siblings of the deeper direct ancestors (great-aunts/uncles and up)
+    // with their partners, if requested. Step 5 already covers the parents'
+    // siblings. A sibling hangs from a shared parent that is drawn, so the
+    // topmost ancestors shown bring none (their parents are out of depth).
+    // Their descendants stay out: a collateral line hanging from gen -2 or
+    // higher runs down beside the focus's own rows, and Phase B cannot route
+    // those buses without crossings — the card's branch pills lead there.
+    if (includeParentSiblings && includeAncestorSiblings) {
+        for (const [ancestorId, depth] of directAncestorDepths(data, focusPersonId, ancestorDepth)) {
+            if (depth < 2 || !persons.has(ancestorId)) continue;
+            for (const sibling of getSiblings(data, ancestorId)) {
+                if (!sibling.parentIds.some(parentId => persons.has(parentId))) continue;
+                persons.add(sibling.id);
+                addPartners(data, sibling.id, persons, partnerships);
             }
         }
     }
@@ -280,6 +300,28 @@ function addAncestorsThroughPartnership(
     }
 
     return currentDepth;
+}
+
+/**
+ * Direct ancestors of a person up to `maxDepth` generations, each with the
+ * nearest generation it is reached at (1 = parent). Pedigree collapse keeps
+ * the smallest depth.
+ */
+function directAncestorDepths(data: StromData, personId: PersonId, maxDepth: number): Map<PersonId, number> {
+    const depths = new Map<PersonId, number>();
+    let frontier: PersonId[] = [personId];
+    for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
+        const next: PersonId[] = [];
+        for (const id of frontier) {
+            for (const parentId of data.persons[id]?.parentIds ?? []) {
+                if (depths.has(parentId) || parentId === personId) continue;
+                depths.set(parentId, depth);
+                next.push(parentId);
+            }
+        }
+        frontier = next;
+    }
+    return depths;
 }
 
 /**

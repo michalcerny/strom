@@ -47,6 +47,7 @@ import { classifyBranches, Branch } from './branch-colors.js';
 import { presumedDeceasedSet, isLivingPerson } from './privacy.js';
 import { placeList } from './places.js';
 import { SettingsManager } from './settings.js';
+import { familyHeadOf } from './generations.js';
 import { personInitials } from './initials.js';
 import { extractSubtree } from './subtree.js';
 import { buildFanModel, buildFanSvg } from './fan-chart.js';
@@ -213,6 +214,8 @@ class TreeRendererClass {
         // The custom card's height follows how many lines it shows.
         document.body.style.setProperty('--card-custom-h', `${size.cardHeight}px`);
         this.updatePlacesDatalist();
+        // Wider family (not in the descendants chart): partners' ancestors and great-aunts/uncles.
+        const widerFamily = this.isWiderFamily();
         const request: LayoutRequest = {
             data: DataManager.getData(),
             focusPersonId: this.focusPersonId,
@@ -220,7 +223,9 @@ class TreeRendererClass {
                 ancestorDepth: descendantsOnly ? 0 : this.focusDepthUp,
                 descendantDepth: this.focusDepthDown,
                 includeAuntsUncles: !descendantsOnly,
-                includeCousins: !descendantsOnly
+                includeCousins: !descendantsOnly,
+                includeSpouseAncestors: widerFamily,
+                includeAncestorSiblings: widerFamily
             },
             config: this.config,
             displayPolicy: {
@@ -241,9 +246,10 @@ class TreeRendererClass {
                     config: request.config,
                     ancestorDepth: request.policy.ancestorDepth,
                     descendantDepth: request.policy.descendantDepth,
-                    includeSpouseAncestors: false,
+                    includeSpouseAncestors: widerFamily,
                     includeParentSiblings: request.policy.includeAuntsUncles,
-                    includeParentSiblingDescendants: request.policy.includeCousins
+                    includeParentSiblingDescendants: request.policy.includeCousins,
+                    includeAncestorSiblings: widerFamily
                 },
                 this.debugOptions
             );
@@ -370,20 +376,20 @@ class TreeRendererClass {
             if (startupFocus.depthUp !== undefined) {
                 this.focusDepthUp = startupFocus.depthUp;
             } else {
-                const maxGen = DataManager.getMaxGenerationsWithSiblings(this.focusPersonId);
+                const maxGen = this.maxGenerations(this.focusPersonId);
                 this.focusDepthUp = maxGen.up;
             }
             if (startupFocus.depthDown !== undefined) {
                 this.focusDepthDown = startupFocus.depthDown;
             } else {
-                const maxGen = DataManager.getMaxGenerationsWithSiblings(this.focusPersonId);
+                const maxGen = this.maxGenerations(this.focusPersonId);
                 this.focusDepthDown = maxGen.down;
             }
         } else {
             // Fall back to first person
             this.focusPersonId = this.findDefaultFocusPerson();
             if (this.focusPersonId) {
-                const maxGen = DataManager.getMaxGenerationsWithSiblings(this.focusPersonId);
+                const maxGen = this.maxGenerations(this.focusPersonId);
                 this.focusDepthUp = maxGen.up;
                 this.focusDepthDown = maxGen.down;
             }
@@ -416,7 +422,7 @@ class TreeRendererClass {
 
         // Set default depth to max available when focusing on a new person
         if (personId) {
-            const maxGen = DataManager.getMaxGenerationsWithSiblings(personId);
+            const maxGen = this.maxGenerations(personId);
             this.focusDepthUp = maxGen.up;
             this.focusDepthDown = maxGen.down;
 
@@ -431,10 +437,10 @@ class TreeRendererClass {
         const focusId = personId;
         void this.renderInternal().then(() => {
             this.updateFocusUI();
-            if (this.viewMode === 'descendants') {
-                this.centerForViewMode();
-            } else if (focusId && reveal) {
+            if (focusId && reveal) {
                 reveal(focusId);
+            } else if (this.viewMode === 'descendants') {
+                this.centerForViewMode();
             } else if (focusId) {
                 ZoomPan.centerOnPerson(focusId);
             }
@@ -450,6 +456,41 @@ class TreeRendererClass {
             DataManager.saveLastFocus(this.focusPersonId, up, down);
             this.render();
         }
+    }
+
+    /**
+     * "Whole family": focus the head of the focus person's family (the topmost
+     * ancestor with the most descendants), every generation down, and frame
+     * the whole chart. Timeline, fan and map switch to the family view.
+     */
+    showWholeFamily(): void {
+        if (!this.focusPersonId) return;
+        const head = familyHeadOf(DataManager.getData(), this.focusPersonId);
+        if (STANDALONE_VIEWS.includes(this.viewMode)) this.presetViewMode('family');
+        this.setFocus(head, true, () => ZoomPan.fitToScreen());
+    }
+
+    /** Is the wider family drawn (the setting is on and the view shows ancestors)? */
+    isWiderFamily(): boolean {
+        return this.viewMode !== 'descendants' && SettingsManager.isWiderFamilyEnabled();
+    }
+
+    /**
+     * Wider family on/off: the partners' ancestors and great-aunts/uncles.
+     * Switching it on takes every generation up that is now available (the
+     * partners' lines may reach further), the way a new focus does.
+     */
+    setWiderFamily(enabled: boolean): void {
+        SettingsManager.setWiderFamily(enabled);
+        if (!this.focusPersonId) return;
+        if (enabled) this.focusDepthUp = this.maxGenerations(this.focusPersonId).up;
+        DataManager.saveLastFocus(this.focusPersonId, this.focusDepthUp, this.focusDepthDown);
+        void this.renderInternal().then(() => this.centerForViewMode());
+    }
+
+    /** Generations up/down around a person in the current view. */
+    private maxGenerations(personId: PersonId): { up: number; down: number } {
+        return DataManager.getMaxGenerationsWithSiblings(personId, this.isWiderFamily());
     }
 
     isFocusMode(): boolean {
@@ -728,6 +769,9 @@ class TreeRendererClass {
 
     private updateFocusUI(): void {
         this.updateNavButtons();
+        // The wider family toggle in the focus pill shows the setting.
+        document.getElementById('focus-wider-family')
+            ?.setAttribute('aria-pressed', String(SettingsManager.isWiderFamilyEnabled()));
         const focusControls = document.getElementById('focus-controls');
         const focusName = document.getElementById('focus-name');
         const focusCount = document.getElementById('focus-person-count');
@@ -787,7 +831,7 @@ class TreeRendererClass {
             }
 
             // Update generation select options based on available data
-            const maxGen = DataManager.getMaxGenerationsWithSiblings(this.focusPersonId);
+            const maxGen = this.maxGenerations(this.focusPersonId);
             this.updateGenerationSelect(depthUpSelect, maxGen.up, this.focusDepthUp);
             this.updateGenerationSelect(depthDownSelect, maxGen.down, this.focusDepthDown);
             // Also update toolbar selects

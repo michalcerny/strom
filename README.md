@@ -18,6 +18,7 @@ Family tree application that runs entirely in your browser. No server required, 
 **Visualization**
 - Interactive tree with generation rows; zoom (scroll/pinch) and pan (drag/swipe)
 - Family, descendants-only and timeline view modes
+- Whole family in one click (from the family's eldest ancestor down) and a wider family toggle (partners' ancestors, great-aunts and great-uncles)
 - Overview minimap for large trees; advanced search filters with in-tree highlighting
 - Relationship calculator ("second cousin once removed")
 - Family statistics charts; anniversaries panel and "on this day" reminders

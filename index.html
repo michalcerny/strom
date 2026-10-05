@@ -5719,6 +5719,34 @@
             transition: background 0.15s, color 0.15s;
         }
         @media (hover: hover) { .focus-clear:hover { background: var(--hover-bg); color: var(--text); } }
+        /* Whole family + the wider family toggle: desktop pill only (the
+           phone row hides them, the More sheet's View carries both). */
+        .focus-scope {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .focus-scope-btn {
+            height: 26px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--r-pill);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        @media (hover: hover) { .focus-scope-btn:hover { background: var(--hover-bg); } }
+        .focus-scope-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+        .focus-scope-toggle[aria-pressed="true"] {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
         .focus-controls .btn-export-focus {
             padding: 8px 14px;
             border: none;
@@ -10552,6 +10580,7 @@
             }
             .focus-controls .focus-label,
             .focus-controls .focus-count,
+            .focus-controls .focus-scope,
             .focus-controls .focus-clear { display: none; }
             .focus-controls .focus-info { flex: 1 1 0; min-width: 0; height: 47px; display: flex; align-items: center; }
             .focus-controls .focus-info strong {
@@ -12634,6 +12663,13 @@
                     <option value="5">5</option>
                 </select>
             </div>
+        </div>
+        <!-- Whole family (the family's head, every generation down) and the
+             wider family toggle (partners' ancestors, great-aunts/uncles).
+             Desktop: tablet and phone reach both from the More sheet's View. -->
+        <div class="focus-scope">
+            <button type="button" class="focus-scope-btn" id="focus-whole-family" onclick="window.Strom.UI.showWholeFamily()" data-i18n="focus.wholeFamily" data-i18n-title="focus.wholeFamilyHint"></button>
+            <button type="button" class="focus-scope-btn focus-scope-toggle" id="focus-wider-family" aria-pressed="false" onclick="window.Strom.UI.toggleWiderFamily()" data-i18n="focus.widerFamily" data-i18n-title="focus.widerFamilyHint"></button>
         </div>
         <button type="button" class="focus-clear" onclick="window.Strom.ZoomPan.fitToScreen()" data-i18n-title="focus.showAll" data-i18n-aria-label="focus.showAll">&times;</button>
     </div>

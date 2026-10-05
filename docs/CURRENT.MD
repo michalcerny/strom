@@ -42,6 +42,12 @@ Selects a subset of persons from the database based on:
 - `includeSpouseAncestors` — ancestors of focus person's spouse
 - `includeParentSiblings` — siblings of parents (aunts/uncles)
 - `includeParentSiblingDescendants` — cousins
+- `includeAncestorSiblings` — siblings (+ partners) of every deeper direct
+  ancestor whose parents are drawn (great-aunts/uncles and up), without their
+  descendants
+
+The app's "wider family" toggle turns on `includeSpouseAncestors` and
+`includeAncestorSiblings` together (family view; off by default).
 
 In expanded display mode the selection is then widened by
 `expandSelectionForDisplay` (same module): for every person in

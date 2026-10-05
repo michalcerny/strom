@@ -170,6 +170,8 @@ the table honest.
 | Child of a person with several partners; link an existing person as a child | `partner-choice.spec.ts` | covered | chosen partner = second parent in the right union; "New person (unknown)" → placeholder union; no duplicate, cycles excluded, Escape returns to the form |
 | Change history (audit log) | `audit-log.spec.ts` | covered | Today / Yesterday / date headers (fixed clock); Export TXT content; Clear after confirmation, empty after reload |
 | Share change packet with edits on both sides; reply as a new tree; reply file opened as the app | `share-packets.spec.ts` | covered | empty packet toast; preview names the changed fields; Accept keeps the owner's edits; re-open = already applied |
+| Whole family (focus pill / More → View) | `whole-family.spec.ts` | covered | from a great-grandchild to the family's head, every generation down, all cards in view; from the fan it opens the family view; offered in the descendants chart too |
+| Wider family toggle (focus pill / More → View) | `whole-family.spec.ts` | covered | great-aunts appear and go; kept over a reload as a setting; phone person row stays one 48px row; not offered in the descendants chart |
 
 ## Opening from outside (Strom Research)
 

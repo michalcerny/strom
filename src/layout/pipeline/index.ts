@@ -379,6 +379,7 @@ export function runLayoutPipeline(input: PipelineInput): LayoutResult {
         includeSpouseAncestors,
         includeParentSiblings,
         includeParentSiblingDescendants,
+        includeAncestorSiblings,
         maxIterations = 20,
         tolerance = 0.5,
         displayPolicy = DEFAULT_DISPLAY_POLICY
@@ -392,7 +393,8 @@ export function runLayoutPipeline(input: PipelineInput): LayoutResult {
         descendantDepth,
         includeSpouseAncestors,
         includeParentSiblings,
-        includeParentSiblingDescendants
+        includeParentSiblingDescendants,
+        includeAncestorSiblings
     });
 
     // Early return if no persons selected
@@ -538,6 +540,7 @@ export function runLayoutPipelineWithDebug(
         includeSpouseAncestors,
         includeParentSiblings,
         includeParentSiblingDescendants,
+        includeAncestorSiblings,
         maxIterations = 20,
         tolerance = 0.5,
         displayPolicy = DEFAULT_DISPLAY_POLICY
@@ -577,7 +580,8 @@ export function runLayoutPipelineWithDebug(
         descendantDepth,
         includeSpouseAncestors,
         includeParentSiblings,
-        includeParentSiblingDescendants
+        includeParentSiblingDescendants,
+        includeAncestorSiblings
     });
 
     // Auto-expand: find persons at gen >= -1 with multiple partnerships,
@@ -737,9 +741,11 @@ export class StromLayoutEngine implements LayoutEngine {
             config: request.config,
             ancestorDepth: request.policy.ancestorDepth,
             descendantDepth: request.policy.descendantDepth,
-            includeSpouseAncestors: false,  // Only show focus person's ancestors
+            // Only the focus person's ancestors unless the wider family is on
+            includeSpouseAncestors: request.policy.includeSpouseAncestors ?? false,
             includeParentSiblings: request.policy.includeAuntsUncles,
             includeParentSiblingDescendants: request.policy.includeCousins,
+            includeAncestorSiblings: request.policy.includeAncestorSiblings ?? false,
             displayPolicy: request.displayPolicy
         });
     }
