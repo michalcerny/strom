@@ -786,6 +786,16 @@ export const appModeMethods = uiModule({
         this.updateViewModeUI(); // badge count + toggle state
     },
 
+    /** Focus panel / More sheet: the family's head, every generation down. */
+    showWholeFamily(): void {
+        TreeRenderer.showWholeFamily();
+    },
+
+    /** Focus panel / More sheet: the wider family on or off (kept as a setting). */
+    toggleWiderFamily(): void {
+        TreeRenderer.setWiderFamily(!SettingsManager.isWiderFamilyEnabled());
+    },
+
     /** Settings default: also applies immediately as the current choice. */
     setDescendantsFullFamiliesDefault(enabled: boolean): void {
         SettingsManager.setDescendantsFullFamiliesDefault(enabled);

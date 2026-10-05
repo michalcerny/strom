@@ -1059,6 +1059,7 @@ export interface AppSettings {
     cardFields?: import('./card-fields.js').CardFieldSettings;
     familyButton?: boolean;  // default: false - toolbar shortcut to the family wizard
     descendantsFullFamilies?: boolean;  // default: false - descendants view shows partners' other families
+    widerFamily?: boolean;  // default: false - family view adds partners' ancestors and great-aunts/uncles
     advancedFields?: boolean;  // default: false (basic mode) - sources/attachments/refn/name variants/question on a person
     geocoding?: boolean;   // default: undefined (never asked) - user allowed sending place names to the geocoder
     mapTiles?: boolean;    // default: undefined (not seen) - user saw that map tiles come from openstreetmap.org

@@ -2976,13 +2976,23 @@ class DataManagerClass {
      * Calculate max generations including siblings' descendants.
      * Siblings are at the same generation level, so their descendants
      * count toward the "down" depth (nieces, nephews, and their children).
+     * `withPartnersAncestors`: the wider family shows the partners' ancestors
+     * too, so their lines count toward the "up" depth.
      */
-    getMaxGenerationsWithSiblings(personId: PersonId): { up: number; down: number } {
+    getMaxGenerationsWithSiblings(personId: PersonId, withPartnersAncestors = false): { up: number; down: number } {
         const person = this.data.persons[personId];
         if (!person) return { up: 1, down: 1 };
 
-        // Calculate max depth up (ancestors) - unchanged
-        const maxUp = this.getMaxAncestorDepth(personId, new Set());
+        // Calculate max depth up (ancestors)
+        let maxUp = this.getMaxAncestorDepth(personId, new Set());
+        if (withPartnersAncestors) {
+            for (const partnershipId of person.partnerships) {
+                const partnership = this.data.partnerships[partnershipId];
+                if (!partnership) continue;
+                const partnerId = partnership.person1Id === personId ? partnership.person2Id : partnership.person1Id;
+                maxUp = Math.max(maxUp, this.getMaxAncestorDepth(partnerId, new Set()));
+            }
+        }
 
         // Calculate max depth down INCLUDING siblings' descendants
         let maxDown = this.getMaxDescendantDepth(personId, new Set());

@@ -66,6 +66,12 @@ export interface SelectSubgraphInput {
     includeSpouseAncestors: boolean; // Include ancestors of focus person's spouse
     includeParentSiblings: boolean;  // Include aunts/uncles (siblings of parents)
     includeParentSiblingDescendants: boolean; // Include cousins
+    /**
+     * Widen aunts/uncles to the siblings of EVERY selected direct ancestor
+     * (great-aunts/uncles and further up), with their descendants when
+     * includeParentSiblingDescendants is set. Requires includeParentSiblings.
+     */
+    includeAncestorSiblings?: boolean;
 }
 
 /**
@@ -477,6 +483,7 @@ export interface PipelineInput {
     includeSpouseAncestors: boolean;
     includeParentSiblings: boolean;
     includeParentSiblingDescendants: boolean;
+    includeAncestorSiblings?: boolean;
     // Constraint solver:
     maxIterations?: number;
     tolerance?: number;
@@ -525,6 +532,10 @@ export interface SelectionPolicy {
     descendantDepth: number;
     includeAuntsUncles: boolean;
     includeCousins: boolean;
+    /** Wider family: the partners' ancestors (default: focus person's only). */
+    includeSpouseAncestors?: boolean;
+    /** Wider family: siblings of every direct ancestor, not just the parents'. */
+    includeAncestorSiblings?: boolean;
 }
 
 /**

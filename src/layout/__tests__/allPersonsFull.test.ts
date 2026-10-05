@@ -3,7 +3,9 @@
  *
  * Runs the COMPLETE layout pipeline via runLayoutPipeline (the real entry
  * point, including auto-expand partner chains and built-in validation)
- * with EVERY person as focus, in both display modes.
+ * with EVERY person as focus, in both display modes, over the widest
+ * selection the app draws (the wider family: partners' ancestors and the
+ * siblings of every ancestor).
  *
  * Checks: valid positions, no card overlap, no edge crossings,
  * built-in validateLayout diagnostics.
@@ -123,6 +125,7 @@ for (const fixtureName of FIXTURES) {
                             includeSpouseAncestors: true,
                             includeParentSiblings: true,
                             includeParentSiblingDescendants: true,
+                            includeAncestorSiblings: true,
                             displayPolicy: mode.displayPolicy,
                         });
                     } catch (e: unknown) {

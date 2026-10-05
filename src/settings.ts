@@ -276,6 +276,20 @@ class SettingsManagerClass {
         this.save();
     }
 
+    /**
+     * Family view: the wider family — the partners' ancestors and the siblings
+     * of every ancestor (great-aunts/uncles and up), beside the focus person's
+     * own line. Default OFF: the chart gets much wider.
+     */
+    isWiderFamilyEnabled(): boolean {
+        return this.settings.widerFamily === true;
+    }
+
+    setWiderFamily(enabled: boolean): void {
+        this.settings.widerFamily = enabled;
+        this.save();
+    }
+
     /** Branch-colour legend default ON (undefined = enabled). */
     /** Branch-colour legend box: default OFF (the colours speak for
      *  themselves; the box took tree real estate on every screenshot). */

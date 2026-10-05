@@ -140,7 +140,13 @@ test('the "More" sheet mirrors the desktop actions menu: Undo/Redo pair, content
     // One section header only: the views.
     expect(await sheet.locator('.bottom-sheet-section').allTextContents()).toEqual(['View']);
     const rows = (await sheet.locator('.bottom-sheet-items > .bottom-sheet-item:not(.bottom-sheet-storage-row)').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim());
-    expect(rows.slice(0, 6)).toEqual(['Family book', 'Anniversaries', 'Export… whole tree or current view', 'Poster…', 'Slideshow (TV mode)', 'Ancestor research']);
+    expect(rows.slice(0, 8)).toEqual([
+        'Family book', 'Anniversaries', 'Export… whole tree or current view', 'Poster…', 'Slideshow (TV mode)',
+        // Under "View", above the Fan / Map pair (whole-family.spec.ts).
+        'Whole family From the eldest ancestor down, every generation',
+        "Wider family Also the partners' ancestors, great-aunts and great-uncles Off",
+        'Ancestor research',
+    ]);
     expect(rows.slice(-3, -1)).toEqual(['Add family…', 'Settings']);
     // About carries the version (BETA · version on the beta site): no badge room in the phone toolbar.
     expect(rows[rows.length - 1]).toMatch(/^About Strom \d+\.\d+\.\d+/);

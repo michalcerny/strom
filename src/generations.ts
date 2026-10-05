@@ -69,3 +69,61 @@ export function assignGenerations(data: StromData): Map<string, number> {
     }
     return gen;
 }
+
+/**
+ * The head of the family a person belongs to, for the "whole family" view:
+ * of the person's topmost ancestors (no recorded parents; the person themself
+ * when they have none), the one with the most blood descendants — the vantage
+ * from which one descendants chart shows the most of the family. Ties go to
+ * a real person over an unknown-parent stand-in, then to the one more
+ * generations up, then to the first reached (the order of parentIds).
+ */
+export function familyHeadOf(data: StromData, personId: PersonId): PersonId {
+    const { persons } = data;
+    const parentsOf = (id: PersonId): PersonId[] =>
+        (persons[id]?.parentIds ?? []).filter(pid => persons[pid]);
+
+    // Topmost ancestors with their depth (nearest one on pedigree collapse).
+    const heads: { id: PersonId; depth: number }[] = [];
+    const seen = new Set<PersonId>([personId]);
+    let frontier: PersonId[] = [personId];
+    for (let depth = 0; frontier.length > 0; depth++) {
+        const next: PersonId[] = [];
+        for (const id of frontier) {
+            const parents = parentsOf(id);
+            if (parents.length === 0) heads.push({ id, depth });
+            for (const pid of parents) {
+                if (seen.has(pid)) continue;
+                seen.add(pid);
+                next.push(pid);
+            }
+        }
+        frontier = next;
+    }
+
+    const bloodCount = (id: PersonId): number => {
+        const blood = new Set<PersonId>([id]);
+        const queue: PersonId[] = [id];
+        while (queue.length > 0) {
+            for (const childId of persons[queue.shift()!]?.childIds ?? []) {
+                if (persons[childId] && !blood.has(childId)) {
+                    blood.add(childId);
+                    queue.push(childId);
+                }
+            }
+        }
+        return blood.size;
+    };
+
+    let best: { id: PersonId; depth: number; count: number; real: boolean } | null = null;
+    for (const head of heads) {
+        const candidate = { ...head, count: bloodCount(head.id), real: !persons[head.id]?.isPlaceholder };
+        if (!best
+            || candidate.count > best.count
+            || (candidate.count === best.count && candidate.real && !best.real)
+            || (candidate.count === best.count && candidate.real === best.real && candidate.depth > best.depth)) {
+            best = candidate;
+        }
+    }
+    return best?.id ?? personId;
+}

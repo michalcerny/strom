@@ -336,8 +336,23 @@ export const bottomSheetMethods = uiModule({
             { label: s.slideshow.menu, run: () => this.startSlideshow() },
         ] });
 
-        // 4) Extra views (Fan/Map — no bottom-bar tab of their own), side by side.
-        blocks.push({ divider: true, header: s.menu.sectionView, rows: [], pair: [
+        // 4) The whole family (the family's head, every generation down) and the
+        //    wider family toggle — the desktop focus pill's pair; the latter
+        //    only where it changes something (not the descendants chart or fan).
+        //    Then the extra views (Fan/Map — no bottom-bar tab), side by side.
+        const scopeRows: MenuRow[] = [];
+        if (TreeRenderer.getFocusPersonId()) {
+            scopeRows.push({ label: s.focus.wholeFamily, sub: s.focus.wholeFamilyHint, run: () => this.showWholeFamily() });
+            if (mode !== 'descendants' && mode !== 'fan') {
+                const wider = SettingsManager.isWiderFamilyEnabled();
+                scopeRows.push({
+                    label: s.focus.widerFamily, sub: s.focus.widerFamilyHint, active: wider,
+                    value: wider ? s.focus.widerFamilyOn : s.focus.widerFamilyOff,
+                    run: () => this.toggleWiderFamily(),
+                });
+            }
+        }
+        blocks.push({ divider: true, header: s.menu.sectionView, rows: scopeRows, pair: [
             { label: s.viewModeSwitch.fan, run: () => this.setDisplayViewMode('fan'), active: mode === 'fan' },
             { label: s.viewModeSwitch.map, run: () => this.setDisplayViewMode('map'), active: mode === 'map' },
         ] });

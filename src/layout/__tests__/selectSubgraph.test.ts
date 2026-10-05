@@ -6,13 +6,13 @@
  * - Ancestors up to specified depth
  * - Descendants down to specified depth
  * - Parent siblings (aunts/uncles) and their families
- * - Excludes grandparent siblings
+ * - Excludes grandparent siblings (unless the wider family asks for them)
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { loadFixture } from './helpers/loadFixture.js';
 import { selectSubgraph } from '../pipeline/1-select-subgraph.js';
-import { PersonId, StromData } from '../../types.js';
+import { PartnershipId, PersonId, StromData } from '../../types.js';
 import { GraphSelection } from '../pipeline/types.js';
 
 describe('selectSubgraph', () => {
@@ -266,6 +266,79 @@ describe('selectSubgraph', () => {
             // Same metrics
             expect(selection1.maxAncestorGen).toBe(selection2.maxAncestorGen);
             expect(selection1.maxDescendantGen).toBe(selection2.maxDescendantGen);
+        });
+    });
+
+    describe('wider family: includeAncestorSiblings', () => {
+        // gm1s (great-uncle) gets a wife and a child, so we can see that the
+        // collateral line itself stays out.
+        const withGreatUncleFamily = (): StromData => {
+            const d = structuredClone(data);
+            const uncle = 'gm1s' as PersonId;
+            const wife = 'gm1s_w' as PersonId;
+            const child = 'gm1s_c' as PersonId;
+            const union = 'part_gm1s' as PartnershipId;
+            d.persons[wife] = {
+                ...d.persons[uncle], id: wife, firstName: 'GreatAunt', gender: 'female',
+                parentIds: [], childIds: [child], partnerships: [union],
+            };
+            d.persons[child] = {
+                ...d.persons[uncle], id: child, firstName: 'ParentsCousin',
+                parentIds: [uncle, wife], childIds: [], partnerships: [],
+            };
+            d.persons[uncle] = { ...d.persons[uncle], childIds: [child], partnerships: [union] };
+            d.partnerships[union] = {
+                ...d.partnerships['part_ggm1_ggd1' as PartnershipId],
+                id: union, person1Id: uncle, person2Id: wife, childIds: [child],
+            };
+            return d;
+        };
+        const select = (d: StromData, ancestorDepth: number, includeAncestorSiblings: boolean): GraphSelection =>
+            selectSubgraph({
+                data: d,
+                focusPersonId: 'f' as PersonId,
+                ancestorDepth,
+                descendantDepth: 2,
+                includeSpouseAncestors: false,
+                includeParentSiblings: true,
+                includeParentSiblingDescendants: true,
+                includeAncestorSiblings,
+            });
+
+        it('adds a grandparent\'s sibling and their partner when the shared parents are drawn', () => {
+            const selection = select(withGreatUncleFamily(), 3, true);
+            expect(selection.persons.has('gm1s' as PersonId)).toBe(true);
+            expect(selection.persons.has('gm1s_w' as PersonId)).toBe(true);
+        });
+
+        it('leaves the great-uncle\'s descendants out', () => {
+            const selection = select(withGreatUncleFamily(), 3, true);
+            expect(selection.persons.has('gm1s_c' as PersonId)).toBe(false);
+        });
+
+        it('adds no sibling of the topmost ancestors drawn (their parents are out of depth)', () => {
+            const selection = select(withGreatUncleFamily(), 2, true);
+            expect(selection.persons.has('gm1s' as PersonId)).toBe(false);
+        });
+
+        it('changes nothing when off', () => {
+            const d = withGreatUncleFamily();
+            const on = select(d, 3, false);
+            expect(on.persons.has('gm1s' as PersonId)).toBe(false);
+            const legacy = selectSubgraph({
+                data: d, focusPersonId: 'f' as PersonId, ancestorDepth: 3, descendantDepth: 2,
+                includeSpouseAncestors: false, includeParentSiblings: true, includeParentSiblingDescendants: true,
+            });
+            expect([...on.persons].sort()).toEqual([...legacy.persons].sort());
+        });
+
+        it('needs includeParentSiblings', () => {
+            const selection = selectSubgraph({
+                data: withGreatUncleFamily(), focusPersonId: 'f' as PersonId, ancestorDepth: 3, descendantDepth: 2,
+                includeSpouseAncestors: false, includeParentSiblings: false, includeParentSiblingDescendants: false,
+                includeAncestorSiblings: true,
+            });
+            expect(selection.persons.has('gm1s' as PersonId)).toBe(false);
         });
     });
 });
